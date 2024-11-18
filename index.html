@@ -5,23 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Évolution de la Population Mondiale</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
   <header>
     <h1>Évolution de la Population Mondiale par Zone Géographique</h1>
   </header>
   
-  <main>
-    <div id="controls">
-      <button id="downloadButton">Télécharger les données</button>
-      <select id="zoneDropdown">
-        <option value="">Toutes les zones</option>
-      </select>
-    </div>
-    <div id="chart-container">
-      <canvas id="populationChart"></canvas>
-    </div>
-  </main>
+<main>
+  <div id="controls">
+    <button id="downloadButton">Télécharger les données</button>
+    <select id="zoneDropdown">
+      <option value="">Toutes les zones</option>
+    </select>
+  </div>
+  <div id="chart-container"> 
+    <canvas id="populationChart"></canvas>
+  </div>
+  <div id="map-container">
+    <div id="map"></div>
+  </div>
+</main>
+
 
   <footer>
     <p>© 2024 - Statistiques Mondiales</p>
