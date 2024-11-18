@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Évolution de la Population Mondiale</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Évolution de la Population Mondiale par Zone Géographique</h1>
+  </header>
+  
+  <main>
+    <div id="controls">
+      <button id="downloadButton">Télécharger les données</button>
+      <select id="zoneDropdown">
+        <option value="">Toutes les zones</option>
+      </select>
+    </div>
+    <div id="chart-container">
+      <canvas id="populationChart"></canvas>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2024 - Statistiques Mondiales</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
