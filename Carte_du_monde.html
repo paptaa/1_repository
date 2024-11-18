@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carte Interactive des Populations</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Style global */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+    }
+
+    header {
+      background-color: #0056b3;
+      color: white;
+      padding: 20px;
+      width: 100%;
+      text-align: center;
+    }
+
+    main {
+      width: 90%;
+      max-width: 800px;
+      margin: 20px auto;
+    }
+
+    footer {
+      background-color: #0056b3;
+      color: white;
+      padding: 10px;
+      width: 100%;
+      text-align: center;
+      position: fixed;
+      bottom: 0;
+    }
+
+    /* Carte interactive */
+    #map-container {
+      margin-top: 20px;
+      width: 100%;
+      height: 500px;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Légende */
+    .legend {
+      background: white;
+      padding: 6px 8px;
+      border-radius: 5px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+      line-height: 18px;
+    }
+
+    .legend i {
+      width: 18px;
+      height: 18px;
+      float: left;
+      margin-right: 8px;
+      opacity: 0.7;
+    }
+
+    /* Contrôles */
+    #controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    #controls select, #controls button {
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-right: 10px;
+      background-color: white;
+      transition: background-color 0.3s ease;
+    }
+
+    #controls button {
+      background-color: #0056b3;
+      color: white;
+      cursor: pointer;
+    }
+
+    #controls button:hover {
+      background-color: #003f88;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Carte Interactive des Populations</h1>
+  </header>
+
+  <main>
+    <div id="controls">
+      <button id="downloadButton">Télécharger les données</button>
+      <select id="zoneDropdown">
+        <option value="">Toutes les zones</option>
+      </select>
+    </div>
+
+    <div id="chart-container">
+      <canvas id="populationChart"></canvas>
+    </div>
+
+    <div id="map-container">
+      <div id="map"></div>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2024 - Statistiques Mondiales</p>
+  </footer>
+
+  <!-- JavaScript inclus dans le même fichier -->
+  <script>
+    // Charger les données CSV
+    async function loadPopulationData() {
+      const response = await fetch('V2.csv');
+      const text = await response.text();
+
+      const rows = text.split('\n').slice(1); // Ignorer l'en-tête
+      const data = {};
+      rows.forEach(row => {
+        const [pays, , , population] = row.split(',');
+        if (pays && population) {
+          data[pays.trim()] = parseInt(population, 10);
+        }
+      });
+
+      return data;
+    }
+
+    // Obtenir une couleur en fonction de la population
+    function getColor(population) {
+      return population > 100000000 ? '#800026' :
+             population > 50000000  ? '#BD0026' :
+             population > 10000000  ? '#E31A1C' :
+             population > 5000000   ? '#FC4E2A' :
+             population > 1000000   ? '#FD8D3C' :
+                                       '#FFEDA0';
+    }
+
+    // Initialiser la carte
+    async function initMap() {
+      const populationData = await loadPopulationData();
+
+      // Créer la carte
+      const map = L.map('map').setView([20, 0], 2);
+
+      // Ajouter une couche OpenStreetMap
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+
+      // Charger le GeoJSON
+      const response = await fetch('./custom.geo.json');
+      const geoData = await response.json();
+
+      // Ajouter les données de population au GeoJSON
+      geoData.features.forEach(feature => {
+        const countryName = feature.properties.name || feature.properties.NAME; // Assurez-vous que ce champ correspond à votre GeoJSON
+        feature.properties.population = populationData[countryName] || null;
+      });
+
+      // Ajouter les pays à la carte
+      L.geoJson(geoData, {
+        style: feature => ({
+          fillColor: getColor(feature.properties.population),
+          weight: 1,
+          opacity: 1,
+          color: 'white',
+          dashArray: '3',
+          fillOpacity: 0.7
+        }),
+        onEachFeature: (feature, layer) => {
+          const population = feature.properties.population !== null
+            ? `${feature.properties.population.toLocaleString()} habitants`
+            : 'Données manquantes';
+          layer.bindPopup(`<strong>${feature.properties.name}</strong><br>Population : ${population}`);
+        }
+      }).addTo(map);
+
+      // Ajouter une légende
+      const legend = L.control({ position: 'bottomright' });
+      legend.onAdd = function () {
+        const div = L.DomUtil.create('div', 'legend');
+        const grades = [0, 1000000, 5000000, 10000000, 50000000, 100000000];
+        let labels = '';
+
+        for (let i = 0; i < grades.length; i++) {
+          labels += `<i style="background:${getColor(grades[i] + 1)}"></i> ${
+            grades[i].toLocaleString()}${grades[i + 1] ? '&ndash;' + grades[i + 1].toLocaleString() : '+'}<br>`;
+        }
+        div.innerHTML = labels;
+        return div;
+      };
+      legend.addTo(map);
+    }
+
+    // Initialiser la carte
+    initMap();
+  </script>
+</body>
+</html>
